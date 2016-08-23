@@ -25,10 +25,12 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         self.resp_func = {'ms_tunnel_get_lsp_by_flow': self.get_lsp_by_flow, 'ms_tunnel_get_lsp':self.get_lsp, \
                       'ms_tunnel_add_lsp':self.add_lsp, 'ms_tunnel_del_lsp':self.del_lsp, \
                       'ms_tunnel_update_lsp':self.update_lsp, 'ms_tunnel_add_flow':self.add_flow, \
-                      'ms_tunnel_del_flow':self.del_flow,
-                      'ms_tunnel_get_customer_by_lsp':self.get_customer_by_lsp, 'ms_tunnel_get_lsp_by_customer':self.get_lsp_by_customer, \
-                      'ms_tunnel_add_customer_to_lsp':self.add_customer_to_lsp, 'ms_tunnel_remove_customer_from_lsp':self.del_customer_from_lsp,
+                      'ms_tunnel_del_flow':self.del_flow,  'ms_tunnel_update_flow':self.update_flow,
+                      'ms_tunnel_get_flow':self.get_flow,
+                      'ms_tunnel_get_customer_by_lsp':self.get_customer_by_lsp, 'ms_tunnel_get_lsp_by_cust':self.get_lsp_by_customer, \
+                      'ms_tunnel_add_customer_to_lsp':self.add_customer_to_lsp, 'ms_tunnel_del_customer_from_lsp':self.del_customer_from_lsp,
                       'ms_tunnel_get_cust_by_lsp':self.get_customer_by_lsp,
+                      'ms_tunnel_get_lsp_by_uids':self.get_lsp_by_uids
                       }
         self.log = 1
         pass
@@ -143,10 +145,10 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         str_keys = ['from_port_uid', 'to_port_uid','from_router_ip', 'to_router_ip','user_data', 'host_list', 'path', 'from_router_name', 'to_router_name']
         num_keys = ['delay', 'priority', 'control_type', 'path_type', 'status']
         for k in str_keys:
-            if k not in lsp:
+            if k not in lsp or lsp[k] is None:
                 lsp[k] = ''
         for k in num_keys:
-            if k not in lsp:
+            if k not in lsp or lsp[k] is None:
                 lsp[k] = 'null'
 
         lsp['hop_list'] = ','.join(lsp['hop_list'])
@@ -196,7 +198,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
 
 
         sql_str = 'update t_lsp set name=\'%s\',from_router_id=\'%s\',to_router_id=\'%s\',bandwidth=%s,delay=%s,priority=%s,status=%s,user_data=\'%s\',path=\'%s\' where t_lsp.id=%s' \
-            % (lsp['name'],lsp['from_router_id'],lsp['to_router_id'],lsp['bandwidth'],lsp['delay'],lsp['priority'],lsp['status'],json.dumps(lsp['user_data']),
+            % (lsp['name'],lsp['from_router_uid'],lsp['to_router_uid'],lsp['bandwidth'],lsp['delay'],lsp['priority'],lsp['status'],json.dumps(lsp['user_data']),
                '' if 'path' not in lsp else ','.join(lsp['path']),lsp['uid'])
         # print sql_str
         db = mysql_utils('tunnel')
@@ -234,13 +236,71 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         flow_uid = args['flow_uid']
         lsp_uid = args['lsp_uid']
 
-        sql_str = 'delete from t_assigned_flow where flow_uid=%s and lsp_uid=%s' % (str(flow_uid), str(lsp_uid))
+        sql_str = 'delete from t_assigned_flow where flow_id=%s and lsp_id=%s' % (str(flow_uid), str(lsp_uid))
         db = mysql_utils('tunnel')
         db.exec_sql(sql_str)
         db.commit()
         db.close()
         return {}
 
+    def get_flow(self, args):
+        # Get flow details (status, user_data...) of a specific LSP.
+        if 'flow_uids' in args and 'lsp_uid' in args:
+            flow_uids = args['flow_uids']
+            lsp_uid = args['lsp_uid']
+        else:
+            print 'Get_flow: flow_uids and lsp_uid must be specified'
+            return {}
+
+        flow = {}
+        sql_str = 'SELECT * from t_assigned_flow WHERE flow_id in (%s) and lsp_id = %s' % (','.join(flow_uids), lsp_uid)
+        db = mysql_utils('tunnel')
+        result = db.exec_sql(sql_str)
+        db.close()
+
+        flows = {}
+        for f in result:
+            flow = {}
+            flow['flow_uid'] = f[10]
+            flow['lsp_uid'] = f[1]
+            flow['status'] = f[8]
+            if f[9] and len(f[9]) > 1:
+                flow['user_data'] = json.loads(f[9])
+            else:
+                flow['user_data'] = None
+            flows[f[10]] = flow
+        return flows
+
+
+    def update_flow(self,args):
+
+        if 'flow_uid' in args and 'lsp_uid' in args:
+            flow_uid = args['flow_uid']
+            lsp_uid = args['lsp_uid']
+        else:
+            print 'Update_flow: flow_uid and lsp_uid must be specified'
+            return {}
+
+        sql_str = 'SELECT * from t_assigned_flow WHERE flow_id = %s and lsp_id = %s' % (flow_uid, lsp_uid)
+        db = mysql_utils('tunnel')
+        result = db.exec_sql(sql_str)
+
+        if not result:
+            print 'Update_flow: Can not find the flow'
+            db.close()
+            return {}
+
+        flow = result[0]
+        status = args['status'] if 'status' in args else flow[8]
+        user_data = json.dumps(args['user_data']) if 'user_data' in args else flow[9]
+
+        sql_str = 'UPDATE t_assigned_flow SET status = %s, user_data = \'%s\' WHERE flow_id = %s and lsp_id=%s'\
+                  % (status, user_data, flow_uid, lsp_uid)
+        db.exec_sql(sql_str)
+        db.commit()
+        db.close()
+
+        return {}
 
     def get_lsp_by_uid(self, uid):
         lsps = {}
@@ -256,8 +316,8 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
             one_lsp = {}
             one_lsp['uid'] = uid
             one_lsp['name'] = result[1]
-            one_lsp['from_router_id'] = result[2]
-            one_lsp['to_router_id'] = result[5]
+            one_lsp['from_router_uid'] = result[2]
+            one_lsp['to_router_uid'] = result[5]
             one_lsp['bandwidth'] = result[8]
             one_lsp['delay'] = result[9]
             one_lsp['priority'] = result[10]
@@ -345,3 +405,30 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
                 db.commit()
         db.close()
         return {}
+
+    def get_lsp_by_uids(self, args):
+
+        uids = args['lsp_uids']
+        lsps = {}
+
+        sql_str = 'select * from t_lsp where t_lsp.id in (%s)' % ','.join(uids)
+        db = mysql_utils('tunnel')
+        results = db.exec_sql(sql_str)
+        db.close()
+
+
+        for result in results:
+            uid = result[0]
+            one_lsp = {}
+            one_lsp['uid'] = uid
+            one_lsp['name'] = result[1]
+            one_lsp['from_router_uid'] = result[2]
+            one_lsp['to_router_uid'] = result[5]
+            one_lsp['bandwidth'] = result[8]
+            one_lsp['delay'] = result[9]
+            one_lsp['priority'] = result[10]
+
+            lsps[uid] = one_lsp
+
+        return lsps
+

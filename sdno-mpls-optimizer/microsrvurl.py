@@ -3,16 +3,17 @@
 __author__ = 'liyiqun'
 
 # microsrv_linkstat_url = 'http://127.0.0.1:32769/microsrv/link_stat'
-microsrv_linkstat_url = 'http://219.141.189.72:10000/link/links'
+microsrv_linkstat_url = 'http://10.9.63.208:7799/microsrv/ms_link/link/links'
+# microsrv_linkstat_url = 'http://219.141.189.72:10000/link/links'
 microsrv_topo_url = 'http://10.9.63.208:7799/microsrv/ms_topo/'
 # microsrv_topo_url = 'http://127.0.0.1:33769/'
 # microsrv_topo_url = 'http://10.9.63.208:7799/microsrv/ms_topo/'
-# microsrv_cust_url = 'http://10.9.63.208:7799/microsrv/ms_cust/'
-microsrv_cust_url = 'http://127.0.0.1:33771/'
+microsrv_cust_url = 'http://10.9.63.208:7799/microsrv/ms_cust/'
+# microsrv_cust_url = 'http://127.0.0.1:33771/'
 microsrv_flow_url = 'http://127.0.0.1:32769/microsrv/flow'
 microsrv_tunnel_url = 'http://10.9.63.208:7799/microsrv/ms_tunnel/'
 # microsrv_tunnel_url = 'http://127.0.0.1:33770/'
-microsrv_controller_url = 'http://10.9.63.208:7799/microsrv/ms_controller/'
+# microsrv_controller_url = 'http://10.9.63.208:7799/microsrv/ms_controller/'
 microsrv_controller_url = 'http://10.9.63.140:12727/'
 
 # te_topo_man_url = 'http://127.0.0.1:32769'
@@ -28,5 +29,11 @@ te_flow_rest_port = 34770
 te_cust_rest_port = 34771
 te_lsp_rest_port = 34772
 te_sched_rest_port = 34773
+te_driver_rest_port = 34774
 
-openo_ms_url = 'http://127.0.0.1:65500/openoapi/microservices/v1/services'
+openo_ms_url = 'http://10.9.63.208:65500/openoapi/microservices/v1/services'
+
+#driver controller url
+microsrv_juniper_controller_host = "https://219.141.189.67:8443"
+microsrv_zte_controller_host = "http://219.141.189.70:8181"
+microsrv_alu_controller_host = "http://219.141.189.68"

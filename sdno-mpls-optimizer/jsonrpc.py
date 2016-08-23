@@ -38,7 +38,7 @@ class base_rpc(object):
         self.request_body['args'] = {} if arg is None else arg
         self.request_body['trans_id'] = int(time.time())
         self.request_body['ts'] = time.strftime("%Y%m%d%H%M%S")
-        pass
+        return self.request_body
 
     def set_request(self, req):
         self.request_body = req

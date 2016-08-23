@@ -83,7 +83,8 @@ class brs_handler(base_handler):
             resp['totalNum'] = num
             eles = []
             for e in res:
-                one_me = {'id':e[0], 'name':e[2],'ipAddress':e[4], 'community':e[5], 'x':e[7], 'y':e[8]}
+                one_me = {'id':str(e[0]), 'name':e[2],'ipAddress':e[4], 'community':e[5],
+                          'x':e[7], 'y':e[8], 'manufacturer':e[6]}
                 eles.append(one_me)
                 pass
             resp['managedElements'] = eles
@@ -95,7 +96,7 @@ class brs_handler(base_handler):
             resp['totalNum'] = num
             ports = []
             for p in res:
-                one_p = {'id':p[0], 'name':p[4], 'portIndex':p[9], 'phyBW':p[5],
+                one_p = {'id':str(p[0]), 'name':p[4], 'portIndex':p[9], 'phyBW':p[5],
                          'macAddress':p[6], 'ipAddress':p[8], 'type':p[2] }
                 ports.append(one_p)
             resp['logicalTerminationPoints'] = ports
@@ -107,7 +108,7 @@ class brs_handler(base_handler):
             resp['totalNum'] = num
             lks = []
             for lk in res:
-                one_lk = {'id':lk[0], 'aEnd':lk[1], 'zEnd':lk[2], 'phyBW':lk[4]}
+                one_lk = {'id':str(lk[0]), 'aEnd':str(lk[1]), 'zEnd':str(lk[2]), 'phyBW':lk[4]}
                 lks.append(one_lk)
             resp['topologicalLinks'] = lks
             pass
