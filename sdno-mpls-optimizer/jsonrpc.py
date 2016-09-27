@@ -1,6 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-__author__ = 'liyiqun'
+#
+#  Copyright 2016 China Telecommunication Co., Ltd.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+
 import time
 import urllib2
 import json
@@ -60,7 +75,7 @@ class base_rpc(object):
     def do_sync_post(self, check_resp = 1):
         try:
             json_obj = json.dumps(self.request_body)
-            print 'JSON RPC Request\n' + str(json_obj)
+            # print 'JSON RPC Request\n' + str(json_obj)
             request = urllib2.Request(self.target_url)
             request.add_header('Content-Type', 'application/json')
             if self.gzip != 0:
@@ -74,7 +89,7 @@ class base_rpc(object):
             hdr = response.headers.get('Content-Encoding')
             if hdr:
                 data = zlib.decompress(data)
-            print 'JSON RPC Response:\n' + str(data);
+            # print 'JSON RPC Response:\n' + str(data);
             if check_resp:
                 return self.check_response(data)
             else:

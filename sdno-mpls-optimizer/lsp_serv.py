@@ -1,6 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-__author__ = 'liyiqun'
+#
+#  Copyright 2016 China Telecommunication Co., Ltd.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
 
 import tornado.httpserver
 import tornado.ioloop
@@ -23,6 +37,7 @@ from tornado_swagger import swagger
 import os
 import os.path
 from flow_sche_serv import *
+from db_util import mysql_utils
 
 swagger.docs()
 
@@ -72,7 +87,8 @@ class lsp_handler(base_handler):
                            'lsp_man_add_lsp' : self.add_lsp,
                             'lsp_man_cb_lsp' : self.cb_lsp,
                             'lsp_man_get_cust_by_lsp':self.get_cust_by_lsp,
-                            'lsp_man_get_lsp_by_cust':self.get_lsp_by_cust}
+                            'lsp_man_get_lsp_by_cust':self.get_lsp_by_cust,
+                            'lsp_man_get_lsp_status':self.get_lsp_status}
 
         self.log = 0
         pass
@@ -85,6 +101,8 @@ class lsp_handler(base_handler):
         resp['err_code'] = 0
         resp['msg'] = ''
         return resp
+
+
 
     @tornado.gen.coroutine
     def get_lsp_by_cust(self, req):
@@ -127,6 +145,26 @@ class lsp_handler(base_handler):
 
         raise tornado.gen.Return(final_resp)
 
+    @tornado.gen.coroutine
+    def get_lsp_status(self, req):
+        final_resp = {'err_code':-1, 'result':{}}
+        try:
+            resp = yield self.do_query(microsrv_tunnel_url,'ms_tunnel_get_lsp_by_uids', req['args'])
+
+            lsps = resp['result']
+            res = {}
+            for k in lsps:
+                p = lsps[k]
+                res[k] = p['status']
+
+            final_resp['err_code'] = 0
+            final_resp['result'] = res
+
+        except (LookupError, KeyError):
+            traceback.print_exc()
+            pass
+        raise tornado.gen.Return(final_resp)
+
 
     @tornado.gen.coroutine
     def get_cust_by_lsp(self,req):
@@ -145,6 +183,9 @@ class lsp_handler(base_handler):
                     pass
 
             lsp_uids = [p['uid'] for p in lsps]
+            lsp_map = {}
+            for p in lsps:
+                lsp_map[p['uid']] = p
 
             # Get customer uids with input lsp_uids
             args = {'lsp_uids':lsp_uids}
@@ -206,7 +247,14 @@ class lsp_handler(base_handler):
             for lsp in lsp_uids:
                 if lsp in custs:
                     cs = [cust_dict[c] for c in custs[lsp]]
-                    custs[lsp] = cs
+                    # Sum up bps of the LSP.
+                    used = 0.0
+                    for c in cs:
+                        if 'bps' in c:
+                            used += float(c['bps'])
+                    perc = 100.0 * used / lsp_map[lsp]['bandwidth']  if 'bandwidth' in lsp_map[lsp] else 0
+
+                    custs[lsp] = {'flows':cs, 'ratio':perc, 'bps':used}
 
             final_resp['err_code'] = 0
             final_resp['result'] = custs
@@ -315,6 +363,9 @@ class lsp_handler(base_handler):
             if 'user_data' in res:
                 user_data = res['user_data']
 
+            if 'lsp_man_del_lsp' == req['request']:
+                resp = yield self.do_query(te_flow_sched_url, 'flow_sched_del_lsp_flow', {'lsp_uid':req['args']['uid']})
+
             # call controller service to update tunnel
             rpc = base_rpc('')
             if user_data:
@@ -342,7 +393,11 @@ class lsp_handler(base_handler):
                     {'uid':req['args']['uid']})
             else:
                 raise tornado.gen.Return(final_resp)
-
+            # flow_add_tag = False
+            db = mysql_utils('topology')
+            db.exec_sql('Update flag set flow_add_flag = 0 where id = 1')
+            db.commit()
+            db.close()
             final_resp['err_code'] = 0
         except (LookupError,TypeError):
             traceback.print_exc()
@@ -838,15 +893,15 @@ class swagger_app(swagger.Application):
     def __init__(self):
 
         settings = {
-            'static_path': os.path.join(os.path.dirname(__file__), 'sdno-mpls-optimizer.swagger')
+            'static_path': os.path.join(os.path.dirname(__file__), 'sdnooptimize.swagger')
         }
 
-        handlers = [(r'/openoapi/sdno-mpls-optimizer/v1/lsp/([^/]+)', lsp_get_handler),
-                    (r'/openoapi/sdno-mpls-optimizer/v1/lsp', lsp_post_handler),
-                    (r'/openoapi/sdno-mpls-optimizer/v1/lsp/vsite/([^/]+)', lsp_vsite_handler),
-                    (r'/openoapi/sdno-mpls-optimizer/v1/vsite/lsp/([^/]+)', vsite_lsp_handler),
-                    (r'/openoapi/sdno-mpls-optimizer/v1/flow-policy', vsite_flow_policy_handler),
-                    (r'/openoapi/sdno-mpls-optimizer/v1/(swagger.json)', tornado.web.StaticFileHandler, dict(path=settings['static_path']))
+        handlers = [(r'/openoapi/sdnooptimize/v1/lsp/([^/]+)', lsp_get_handler),
+                    (r'/openoapi/sdnooptimize/v1/lsp', lsp_post_handler),
+                    (r'/openoapi/sdnooptimize/v1/lsp/vsite/([^/]+)', lsp_vsite_handler),
+                    (r'/openoapi/sdnooptimize/v1/vsite/lsp/([^/]+)', vsite_lsp_handler),
+                    (r'/openoapi/sdnooptimize/v1/flow-policy', vsite_flow_policy_handler),
+                    (r'/openoapi/sdnooptimize/v1/(swagger.json)', tornado.web.StaticFileHandler, dict(path=settings['static_path']))
                     ]
 
         super(swagger_app, self).__init__(handlers, **settings)
@@ -859,7 +914,7 @@ class swagger_app(swagger.Application):
 
         tornado.ioloop.IOLoop.instance().add_timeout(
                         datetime.timedelta(milliseconds=500),
-                        openo_register, 'mpls-optimizer', 'v1', '/openoapi/sdno-mpls-optimizer/v1',
+                        openo_register, 'mpls-optimizer', 'v1', '/openoapi/sdnooptimize/v1',
                         '127.0.0.1', te_lsp_rest_port )
 
 

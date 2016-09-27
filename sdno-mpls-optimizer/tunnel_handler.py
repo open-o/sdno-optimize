@@ -1,7 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
-__author__ = 'pzhang'
+#
+#  Copyright 2016 China Telecommunication Co., Ltd.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
 
 import tornado.web
 import json
@@ -32,7 +45,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
                       'ms_tunnel_get_cust_by_lsp':self.get_customer_by_lsp,
                       'ms_tunnel_get_lsp_by_uids':self.get_lsp_by_uids
                       }
-        self.log = 1
+        self.log = 0
         pass
 
     def form_response(self, req):
@@ -42,7 +55,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         resp['ts'] = time.strftime("%Y%m%d%H%M%S")
         resp['trans_id'] = req['trans_id']
         resp['err_code'] = 0
-        resp['msg'] = 'Demo response'
+        resp['msg'] = ''
         self.set_header('Content-Type', 'application/json')
         return resp
     
@@ -199,7 +212,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
 
         sql_str = 'update t_lsp set name=\'%s\',from_router_id=\'%s\',to_router_id=\'%s\',bandwidth=%s,delay=%s,priority=%s,status=%s,user_data=\'%s\',path=\'%s\' where t_lsp.id=%s' \
             % (lsp['name'],lsp['from_router_uid'],lsp['to_router_uid'],lsp['bandwidth'],lsp['delay'],lsp['priority'],lsp['status'],json.dumps(lsp['user_data']),
-               '' if 'path' not in lsp else ','.join(lsp['path']),lsp['uid'])
+               ','.join((str(lsp['from_router_uid']), str(lsp['to_router_uid']))) if 'path' not in lsp or len(lsp['path']) == 0 else ','.join(lsp['path']),lsp['uid'])
         # print sql_str
         db = mysql_utils('tunnel')
         result = db.exec_sql(sql_str)
@@ -243,17 +256,26 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         db.close()
         return {}
 
+
+
     def get_flow(self, args):
         # Get flow details (status, user_data...) of a specific LSP.
-        if 'flow_uids' in args and 'lsp_uid' in args:
-            flow_uids = args['flow_uids']
+        if  'lsp_uid' in args:
+            if 'flow_uids' in args :
+                flow_uids = args['flow_uids']
+            else:
+                flow_uids = None
             lsp_uid = args['lsp_uid']
         else:
-            print 'Get_flow: flow_uids and lsp_uid must be specified'
+            print 'Get_flow: lsp_uid must be specified'
             return {}
 
         flow = {}
-        sql_str = 'SELECT * from t_assigned_flow WHERE flow_id in (%s) and lsp_id = %s' % (','.join(flow_uids), lsp_uid)
+        if flow_uids:
+            sql_str = 'SELECT * from t_assigned_flow WHERE flow_id in (%s) and lsp_id = %s' % (','.join(flow_uids), lsp_uid)
+        else:
+            sql_str = 'SELECT * from t_assigned_flow WHERE  lsp_id = %s' % lsp_uid
+
         db = mysql_utils('tunnel')
         result = db.exec_sql(sql_str)
         db.close()
@@ -427,6 +449,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
             one_lsp['bandwidth'] = result[8]
             one_lsp['delay'] = result[9]
             one_lsp['priority'] = result[10]
+            one_lsp['status'] = result[13]
 
             lsps[uid] = one_lsp
 
