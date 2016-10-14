@@ -1,0 +1,12 @@
+# rest framework
+tornado==4.4.1
+
+# for access MySQL
+DBUtils==1.1
+MySQL-python==1.2.3
+
+# for call rest api
+tornado_swagger==1.0
+
+# for unit test
+coverage==4.2
