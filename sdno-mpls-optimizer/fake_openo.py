@@ -83,6 +83,84 @@ class ms_handler(base_handler):
         self.finish()
         pass
 
+class driver_handler(base_handler):
+    def initialize(self):
+        super(driver_handler, self).initialize()
+        pass
+
+    #For service register
+    def post(self, dummy):
+        ctnt = self.request.body
+        print 'Fake Open-O driver: Received post \n'
+        print str(ctnt)
+        try:
+            req = json.loads(str(ctnt))
+        except:
+            self.write('Invalid Request')
+            self.finish()
+
+        sn = req['driverInfo']['driverName']
+        if sn not in self.application.service_entry:
+            self.application.service_entry[sn] = req
+        else:
+            added = []
+            services = req['driverInfo']['services']
+            for item in services:
+                exists = 0
+                for ex in self.application.service_entry[sn]['driverInfo']['services']:
+                    if ex['service_url'] == item['service_url']:
+                        exists = 1
+                        break
+                    pass
+                if not exists:
+                    added.append(item)
+                pass
+            self.application.service_entry[sn]['driverInfo']['services'] += added
+
+        self.write('{}')
+        self.finish()
+        pass
+
+    #For servcie query
+    def get(self, input):
+
+        serv = {}
+
+        m = self.application.query_service_pat.match(input)
+        if m and m.groups():
+            sn = m.groups()[0]
+            if sn in self.application.service_entry:
+                serv = self.application.service_entry[sn]
+
+        self.write(json.dumps(serv))
+        self.finish()
+        pass
+
+class esr_handler(base_handler):
+    def initialize(self):
+        super(esr_handler, self).initialize()
+        pass
+
+    #For ers controller query
+    def post(self, dummy):
+        ctnt = self.request.body
+        print 'Fake Open-O esr: Received post \n'
+        print str(ctnt)
+        try:
+            req = json.loads(str(ctnt))
+        except:
+            self.write('Invalid Request')
+            self.finish()
+
+        resp = {'driver_url':'', 'type':'', 'vendor':'ZTE', 'version':''}
+
+        self.write(json.dumps(resp))
+        self.finish()
+        pass
+
+    def get(self, input):
+        pass
+
 class brs_handler(base_handler):
     def initialize(self):
         super(brs_handler, self).initialize()
@@ -138,7 +216,9 @@ class openo_app(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r'/openoapi/microservices/v1/services(.*)', ms_handler),
-            (r'/openoapi/sdno-brs/v1/(.*)', brs_handler)
+            (r'/openoapi/sdno-brs/v1/(.*)', brs_handler),
+            (r'/openoapi/esr/v1/drivers(.*)', esr_handler),
+            (r'/openoapi/drivermanager/v1/drivers(.*)', driver_handler)
         ]
 
         self.service_entry = {}

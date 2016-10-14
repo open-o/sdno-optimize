@@ -16,6 +16,8 @@
 #  limitations under the License.
 #
 
+import sys
+
 import tornado.httpserver
 import tornado.ioloop
 import tornado.options
@@ -26,7 +28,7 @@ import json
 import threading
 import traceback
 
-from topofetch import *
+from common import *
 from jsonrpc import *
 from microsrvurl import *
 from test import *
@@ -917,13 +919,25 @@ class swagger_app(swagger.Application):
                         openo_register, 'mpls-optimizer', 'v1', '/openoapi/sdnooptimize/v1',
                         '127.0.0.1', te_lsp_rest_port )
 
+def strip_uniq_from_argv():
+    '''The --uniq is used to identify a process.
+
+    a.py --uniq=2837492392994857 argm argn ... argz
+    ps aux | grep "--uniq=2837492392994857" | awk '{print $2}' | xargs kill -9
+    '''
+
+    for a in sys.argv:
+        if a.startswith("--uniq="):
+            sys.argv.remove(a)
 
 if __name__ == '__main__':
+    strip_uniq_from_argv()
+
     tornado.options.parse_command_line()
     swag = swagger_app()    # For REST interface
     app = lsp_app(swag)
     server = tornado.httpserver.HTTPServer(app)
-    server.listen(32772)
+    server.listen(32775)
     server_swag = tornado.httpserver.HTTPServer(swag)
     server_swag.listen(te_lsp_rest_port)
 
