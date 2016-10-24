@@ -35,7 +35,7 @@ te_flow_sched_url = 'http://127.0.0.1:32773'
 te_topo_rest_port = 8610
 te_flow_rest_port = 34770
 te_cust_rest_port = 8600
-te_lsp_rest_port = 8620
+te_lsp_rest_port = 8621
 te_sched_rest_port = 34773
 te_driver_rest_port = 8670
 

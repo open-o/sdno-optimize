@@ -18,6 +18,8 @@
 
 __author__ = 'liyiqun'
 
+import sys
+
 import tornado.httpserver
 import tornado.ioloop
 import tornado.options
@@ -28,7 +30,6 @@ import json
 import threading
 import traceback
 
-from topofetch import *
 from jsonrpc import *
 from microsrvurl import *
 from test import *
@@ -529,11 +530,22 @@ class flow_sched_app(tornado.web.Application):
             traceback.print_exc()
             pass
 
+def strip_uniq_from_argv():
+    '''The --uniq is used to identify a process.
 
+    a.py --uniq=2837492392994857 argm argn ... argz
+    ps aux | grep "--uniq=2837492392994857" | awk '{print $2}' | xargs kill -9
+    '''
+
+    for a in sys.argv:
+        if a.startswith("--uniq="):
+            sys.argv.remove(a)
 
 if __name__ == '__main__':
+    strip_uniq_from_argv()
+
     tornado.options.parse_command_line()
     app = flow_sched_app()
     server = tornado.httpserver.HTTPServer(app)
-    server.listen(32773)
+    server.listen(32774)
     tornado.ioloop.IOLoop.instance().start()
