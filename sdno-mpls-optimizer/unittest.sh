@@ -15,37 +15,6 @@
 #  limitations under the License.
 #
 
-BASEDIR=$(dirname $(readlink -f $0))
-
-#
-# Mysql
-#
-
-# Delete mysql replacement
-yum erase -y mariadb* 
-
-# Ensure the /root/.mysql_secret file been created
-yum install -y perl-Module-Install.noarch
-
-# Add yum repo to system
-rpm -ivh http://dev.mysql.com/get/mysql57-community-release-el7-9.noarch.rpm 
-
-# Install mysql stuff
-yum install mysql-community-server.x86_64 mysql-community-client.x86_64 mysql-community-devel.x86_64 -y
-
-/sbin/iptables -I INPUT -p tcp --dport 3306 -j ACCEPT
-
-service mysqld start
-sleep 10
-
-# Change password of mysql
-service mysqld stop
-mysqld --user=mysql --skip-grant-tables --skip-networking &
-sleep 5
-mysql -uroot mysql -e "use mysql; update mysql.user SET authentication_string= PASSWORD ('root') WHERE User='root'; flush privileges;"
-pkill mysqld
-service mysqld start
-
 #
 # Python
 #
@@ -69,13 +38,11 @@ rm -fr /tmp/swagger/
 unzip /tmp/swagger.zip -d /tmp/swagger/
 cd /tmp/swagger/tornado-swagger-master
 python setup.py install
-cd ${BASEDIR}
 
 # Python MySQL things
 yum install -y gcc.x86_64 
 yum install -y python-devel
 pip install MySQL-python
 pip install DBUtils
-
-. ./db.sh
+pip install coverage
 

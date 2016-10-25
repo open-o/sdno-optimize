@@ -30,6 +30,7 @@ import json
 import threading
 import traceback
 
+from topofetch import *
 from jsonrpc import *
 from microsrvurl import *
 from test import *
@@ -80,13 +81,13 @@ class flow_sched_handler(base_handler):
         try:
             # call customer service to get ips
             args = {'uids':[req['args']['cust_uid']]}
-            resp = yield self.do_query(microsrv_cust_url, 'ms_cust_get_customer',args)
+            resp = yield self.do_query(microsrvurl_dict['microsrv_cust_url'], 'ms_cust_get_customer',args)
             flows = resp['result']['customers'][0]['ips']
 
             #Get current flow's lsp info  from tunnel ms. one flow is allowed to be in more than 1 LSP.
             fs = [f['uid'] for f in flows]
             args = {'flow_uids':fs}
-            resp = yield self.do_query(microsrv_tunnel_url, 'ms_tunnel_get_lsp_by_flow', args)
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], 'ms_tunnel_get_lsp_by_flow', args)
             flow_map = resp['result']
 
             #Get user_data from tunnel ms
@@ -94,14 +95,14 @@ class flow_sched_handler(base_handler):
             user_data = None
             if op:
                 args = {'lsp_uids':[req_lsp]}
-                resp = yield self.do_query(microsrv_tunnel_url, 'ms_tunnel_get_lsp', args)
+                resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], 'ms_tunnel_get_lsp', args)
                 resp = resp['result']['lsps'][0]    #Here we always query a single lsp.
                 if 'user_data' in resp:
                     user_data = resp['user_data']
             else:
                 ' Delete flow. we need user_data of flow instead of lsp'
                 args = {'lsp_uid': req_lsp, 'flow_uids':[str(x['uid']) for x in flows]}
-                resp = yield self.do_query(microsrv_tunnel_url, 'ms_tunnel_get_flow', args)
+                resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], 'ms_tunnel_get_flow', args)
                 user_data = resp['result']
 
         except (LookupError, TypeError):
@@ -136,7 +137,7 @@ class flow_sched_handler(base_handler):
                 # call controller service to control the flow
 
                 args = {'lsp_uid':req_lsp, 'flow':f, 'user_data':user_data, 'callback':'flow_sched_callback'}
-                resp = yield self.do_query(microsrv_controller_url, self.subreq_ctrler_map[req['request']], args)
+                resp = yield self.do_query(microsrvurl_dict['microsrv_controller_url'], self.subreq_ctrler_map[req['request']], args)
                 if resp['err_code'] != 0:
                     raise tornado.gen.Return(final_resp)
 
@@ -146,13 +147,13 @@ class flow_sched_handler(base_handler):
                 if resp['result'] is not None and 'user_data' in resp['result']:
                     ud = resp['result']['user_data']
                     args['user_data'] = ud
-                resp = yield self.do_query(microsrv_tunnel_url,  self.subreq_tunnel_map[req['request']], args)
+                resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'],  self.subreq_tunnel_map[req['request']], args)
                 pass
 
             #Add/Remove customer to/from to LSP info.
             cust_args = {'lsp_uid':req_lsp, 'cust_uid':req['args']['cust_uid']}
             method = 'ms_tunnel_add_customer_to_lsp'
-            resp = yield self.do_query(microsrv_tunnel_url, method, cust_args)
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], method, cust_args)
             final_resp['err_code'] = 0
 
         except (LookupError, TypeError):
@@ -190,7 +191,7 @@ class flow_sched_handler(base_handler):
 
                 # call controller service to control the flow
                 args = {'lsp_uid':req_lsp, 'flow':f, 'user_data':user_data[fid]['user_data'] if fid in user_data else None, 'callback':'flow_sched_callback'}
-                resp = yield self.do_query(microsrv_controller_url, self.subreq_ctrler_map[req['request']], args)
+                resp = yield self.do_query(microsrvurl_dict['microsrv_controller_url'], self.subreq_ctrler_map[req['request']], args)
                 if resp['err_code'] != 0:
                     raise tornado.gen.Return(final_resp)
 
@@ -200,13 +201,13 @@ class flow_sched_handler(base_handler):
                 if resp['result'] is not None and 'user_data' in resp['result']:
                     ud = resp['result']['user_data']
                     args['user_data'] = ud
-                resp = yield self.do_query(microsrv_tunnel_url,  self.subreq_tunnel_map[req['request']], args)
+                resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'],  self.subreq_tunnel_map[req['request']], args)
                 pass
 
             #Add/Remove customer to/from to LSP info.
             cust_args = {'lsp_uid':req_lsp, 'cust_uid':req['args']['cust_uid']}
             method = 'ms_tunnel_del_customer_from_lsp'
-            resp = yield self.do_query(microsrv_tunnel_url, method, cust_args)
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], method, cust_args)
             final_resp['err_code'] = 0
 
         except (LookupError, TypeError):
@@ -222,13 +223,13 @@ class flow_sched_handler(base_handler):
         final_resp = {'err_code':-1, 'result':{}}
         try:
             lsp = req['args']['lsp_uid']
-            flows = yield self.do_query(microsrv_tunnel_url, 'ms_tunnel_get_flow', {'lsp_uid': lsp})
+            flows = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], 'ms_tunnel_get_flow', {'lsp_uid': lsp})
             for f in flows:
                 # call controller service to control the flow
                 if 'user_data' not in f or len(f['user_data']) < 1:
                     continue
                 args = {'lsp_uid':lsp, 'flow':f['flow_uid'], 'user_data':f['user_data'], 'callback':'flow_sched_callback'}
-                resp = yield self.do_query(microsrv_controller_url, self.subreq_ctrler_map[req['request']], args)
+                resp = yield self.do_query(microsrvurl_dict['microsrv_controller_url'], self.subreq_ctrler_map[req['request']], args)
                 pass
 
             final_resp['err_code'] = 0
@@ -252,7 +253,7 @@ class flow_sched_handler(base_handler):
             args = {'flow_uid':req['args']['flow_uid'], 'status':status, 'lsp_uid':req['args']['lsp_uid']}
             if 'user_data' in req['args']:
                 args['user_data'] = req['args']['user_data']
-            resp = yield self.do_query(microsrv_tunnel_url, method, args)
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], method, args)
             if resp['err_code'] != 0:
                 raise tornado.gen.Return(final_resp)
             else:
@@ -275,7 +276,7 @@ class flow_sched_handler(base_handler):
             equip = req['args']['equip_uid']
 
             #Call ms_flow to get flow
-            resp = yield self.do_query(microsrv_flow_url, 'ms_flow_get_flow', {'equip_uid':equip})
+            resp = yield self.do_query(microsrvurl_dict['microsrv_flow_url'], 'ms_flow_get_flow', {'equip_uid':equip})
             flows = resp['result']['flows']
 
             # Form src ip list and get customer of all flow.
@@ -284,7 +285,7 @@ class flow_sched_handler(base_handler):
                 src_ips[f['src']] = 0
             ip_list = [x for x in src_ips]
 
-            resp = yield self.do_query(microsrv_cust_url, 'ms_cust_get_customer_by_ip', {'ips':ip_list})
+            resp = yield self.do_query(microsrvurl_dict['microsrv_cust_url'], 'ms_cust_get_customer_by_ip', {'ips':ip_list})
             custs = resp['result']
 
             #Aggregate data.  cust_flows is {cust_uid: {cust_name, hops:{next_hop_uid:{next_hop_name, bps} } }}
@@ -354,7 +355,7 @@ class flow_sched_handler(base_handler):
 
         try:
             # Fetch link status
-            resp = yield self.do_query(te_topo_man_url,'topo_man_get_vlinks', {} )
+            resp = yield self.do_query(microsrvurl_dict['te_topo_man_url'],'topo_man_get_vlinks', {} )
             vlinks = resp['result']['vlinks']
             ls_map = self.form_link_status_map(vlinks)
 
@@ -502,7 +503,7 @@ class flow_sched_app(tornado.web.Application):
 
     def get_topo(self):
         'Get topo data from topo service'
-        rpc = base_rpc(microsrv_topo_url)
+        rpc = base_rpc(microsrvurl_dict['microsrv_topo_url'])
         rpc.form_request('ms_topo_get_equip', {})
         resp = rpc.do_sync_post()
         try:
@@ -530,21 +531,7 @@ class flow_sched_app(tornado.web.Application):
             traceback.print_exc()
             pass
 
-def strip_uniq_from_argv():
-    '''The --uniq is used to identify a process.
-
-    a.py --uniq=2837492392994857 argm argn ... argz
-    ps aux | grep "--uniq=2837492392994857" | awk '{print $2}' | xargs kill -9
-    '''
-
-    for a in sys.argv:
-        if a.startswith("--uniq="):
-            sys.argv.remove(a)
-
 if __name__ == '__main__':
-    strip_uniq_from_argv()
-
-    tornado.options.parse_command_line()
     app = flow_sched_app()
     server = tornado.httpserver.HTTPServer(app)
     server.listen(32774)

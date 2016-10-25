@@ -79,6 +79,9 @@ class ms_handler(base_handler):
             if sn in self.application.service_entry:
                 serv = self.application.service_entry[sn]
 
+        print 'Fake Open-O service: Returned get \n'
+        print(json.dumps(serv))
+
         self.write(json.dumps(serv))
         self.finish()
         pass
@@ -88,7 +91,7 @@ class driver_handler(base_handler):
         super(driver_handler, self).initialize()
         pass
 
-    #For service register
+    #For driver register
     def post(self, dummy):
         ctnt = self.request.body
         print 'Fake Open-O driver: Received post \n'
@@ -121,17 +124,40 @@ class driver_handler(base_handler):
         self.finish()
         pass
 
-    #For servcie query
+    #For driver query
     def get(self, input):
 
-        serv = {}
-
-        m = self.application.query_service_pat.match(input)
-        if m and m.groups():
-            sn = m.groups()[0]
-            if sn in self.application.service_entry:
-                serv = self.application.service_entry[sn]
-
+        serv = [
+          {
+            "driverName": "sdno-driver-ct-te",
+            "instanceID": "vnfm-0-1",
+            "ip": "10.23.63.21",
+            "port": "23456",
+            "protocol": "http",
+            "services": [
+                       {
+                           "service_url":"/openoapi/sbi-l3vpn/v1",
+                       "support_sys":[
+                                            {   "type":"Agile Controller-DCN",
+                                                "version":"V100R002"
+                                            },
+                                            {   "type":"Agile Controller-DCN",
+                                                "version":"V100R003"
+                                            }
+                                         ]
+                         },
+                        {
+                           "service_url":"/openoapi/sbi-l2vpn/v1",
+                           "support_sys":[
+                                            {   "type":"Agile Controller-DCN",
+                                                "version":"V100R003"
+                                            }
+                                         ]
+                         }
+                       ]
+          }]
+        print 'Fake Open-O driver: Returned get \n'
+        print(json.dumps(serv))
         self.write(json.dumps(serv))
         self.finish()
         pass
@@ -159,6 +185,22 @@ class esr_handler(base_handler):
         pass
 
     def get(self, input):
+        resp = {
+       "sdnControllerId":"a6c42529-cd6b-4c01-b149-03eb54b20a03",
+       "name":"sdn",
+       "url":"http://10.74.151.13:8181",
+       "userName":"admin",
+       "password":"admin",
+       "version":"v1.0",
+       "vendor":"ZTE",
+       "description":"",
+       "protocol":"netconf",
+       "productName":"",
+       "type":"ODL",
+       "createTime":"2016-07-18 12:22:53"
+        }
+        self.write(json.dumps(resp))
+        self.finish()
         pass
 
 class brs_handler(base_handler):
@@ -217,8 +259,8 @@ class openo_app(tornado.web.Application):
         handlers = [
             (r'/openoapi/microservices/v1/services(.*)', ms_handler),
             (r'/openoapi/sdno-brs/v1/(.*)', brs_handler),
-            (r'/openoapi/esr/v1/drivers(.*)', esr_handler),
-            (r'/openoapi/drivermanager/v1/drivers(.*)', driver_handler)
+            (r'/openoapi/extsys/v1/sdncontrollers(.*)', esr_handler),
+            (r'/openoapi/drivermgr/v1/drivers(.*)', driver_handler)
         ]
 
         self.service_entry = {}
@@ -230,5 +272,5 @@ class openo_app(tornado.web.Application):
 if __name__ == '__main__':
     app = openo_app()
     server = tornado.httpserver.HTTPServer(app)
-    server.listen(65500)
+    server.listen(8086)
     tornado.ioloop.IOLoop.instance().start()

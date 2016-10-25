@@ -15,9 +15,17 @@
 #  limitations under the License.
 #
 
-PROC_UNIQ_KEY=e152313f-284e-4059-b7c4-f76260606dc0
+MSB_ADDRESS="msb.openo.org:8086"
+SDNO_OPTIMIZE_ADDRESS="sdno-optimize:8620"
 
+PROC_UNIQ_KEY=e152313f-284e-4059-b7c4-f76260606dc0
 BASEDIR=$(dirname $(readlink -f $0))
-nohup python ${BASEDIR}/lsp_serv.py --uniq=${PROC_UNIQ_KEY} &> /dev/null &
-nohup python ${BASEDIR}/flow_sche_serv.py --uniq=${PROC_UNIQ_KEY} &> /dev/null &
-nohup python ${BASEDIR}/tunnel_server.py --uniq=${PROC_UNIQ_KEY} &> /dev/null &
+
+OPTS=""
+OPTS+=" --uniq=${PROC_UNIQ_KEY}"
+OPTS+=" --msburl=${MSB_ADDRESS}"
+OPTS+=" --localurl=${SDNO_OPTIMIZE_ADDRESS}"
+
+nohup python ${BASEDIR}/lsp_serv.py ${OPTS} &> /dev/null &
+nohup python ${BASEDIR}/flow_sche_serv.py ${OPTS} &> /dev/null &
+nohup python ${BASEDIR}/tunnel_server.py ${OPTS} &> /dev/null &
