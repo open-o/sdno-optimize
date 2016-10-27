@@ -24,12 +24,11 @@ def openo_register(name, ver, url, ip, port, ttl = 0):
 
     req = {'serviceName':name, 'version':ver, 'url':url, 'protocol':'REST', 'visualRange':1,
            'nodes':[{'ip':ip, 'port':port, 'ttl':ttl}]}
-
-    rpc = base_rpc(openo_ms_url)
+    rpc = base_rpc(microsrvurl_dict['openo_ms_url'])
     rpc.set_request(req)
     resp = rpc.do_sync_post(0)
-
-    # openo_query_service(name, ver)
+    # print('******')
+    # print openo_query_service(name, ver)
     pass
 
 def openo_driver_register(name, id, ver, url, ip, port, type):
@@ -39,27 +38,28 @@ def openo_driver_register(name, id, ver, url, ip, port, type):
              "services": [{"service_url":url,
                            "support_sys":[{"type":type,"version":ver}]}]}}
 
-    rpc = base_rpc(openo_dm_url)
+    rpc = base_rpc(microsrvurl_dict['openo_dm_url'])
     rpc.set_request(req)
     resp = rpc.do_sync_post(0)
     # print json.loads(resp)
     # print('******')
-    # print openo_query_driver(name, ver)
+    # print openo_query_driver(name, id, ver)
     pass
 
 def openo_esr_controller_info_req(controller_id):
     req = {"ControllerID":controller_id}
 
-    rpc = base_rpc(openo_esr_url)
-    rpc.set_request(req)
-    resp = rpc.do_sync_post(0)
+    rpc = base_rpc(microsrvurl_dict['openo_esr_url'] + '/' + controller_id)
+    resp = rpc.do_sync_get()
     # print json.loads(resp)
     # print('******')
     return resp
     pass
 
-def openo_query_driver(name, ver):
-    url = openo_ms_url + '/' + name + '/version/' + ver
+def openo_query_driver(name, id, ver):
+    # batch query or exact query, temp batch
+    # url = openo_dm_url + '/' + name + '/version/' + ver
+    url = microsrvurl_dict['openo_dm_url'] + '/' + name + '/version/' + ver
     rpc = base_rpc(url)
     resp = rpc.do_sync_get()
     if resp is None:
@@ -73,7 +73,7 @@ def openo_query_driver(name, ver):
     return serv
 
 def openo_query_service(name, ver):
-    url = openo_ms_url + '/' + name + '/version/' + ver
+    url = microsrvurl_dict['openo_ms_url'] + '/' + name + '/version/' + ver
     rpc = base_rpc(url)
     resp = rpc.do_sync_get()
     if resp is None:

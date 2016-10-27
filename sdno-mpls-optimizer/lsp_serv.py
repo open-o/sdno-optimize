@@ -21,6 +21,7 @@ import sys
 import tornado.httpserver
 import tornado.ioloop
 import tornado.options
+from tornado.options import options
 import tornado.web
 import tornado.httpclient
 import tornado.gen
@@ -28,7 +29,7 @@ import json
 import threading
 import traceback
 
-from common import *
+from topofetch import *
 from jsonrpc import *
 from microsrvurl import *
 from test import *
@@ -112,7 +113,7 @@ class lsp_handler(base_handler):
         try:
             # Get lsp uids of each customer
             custs = req['args']['cust_uids']
-            resp = yield self.do_query(microsrv_tunnel_url, self.subreq_tunnel_map[req['request']], req['args'])
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], self.subreq_tunnel_map[req['request']], req['args'])
             lsp_uids = {}
             if resp is not None and 'result' in resp:
                 lsp_uids = resp['result']
@@ -122,7 +123,7 @@ class lsp_handler(base_handler):
                     lsp_dict[lsp['lsp_uid']] = None
 
             #get lsp details
-            resp2 = yield self.do_query(microsrv_tunnel_url, self.subreq_tunnel_map['lsp_man_get_lsp'],
+            resp2 = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], self.subreq_tunnel_map['lsp_man_get_lsp'],
                                         {'lsp_uids':lsp_dict.keys()})
             lsps = resp2['result']['lsps']
             lsp_map = {}
@@ -151,7 +152,7 @@ class lsp_handler(base_handler):
     def get_lsp_status(self, req):
         final_resp = {'err_code':-1, 'result':{}}
         try:
-            resp = yield self.do_query(microsrv_tunnel_url,'ms_tunnel_get_lsp_by_uids', req['args'])
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'],'ms_tunnel_get_lsp_by_uids', req['args'])
 
             lsps = resp['result']
             res = {}
@@ -175,7 +176,7 @@ class lsp_handler(base_handler):
             lsps = req['args']['lsps']
             if 'from_router_uid' not in lsps[0]:
                 'ingress node is missing in request.'
-                resp = yield self.do_query(microsrv_tunnel_url,'ms_tunnel_get_lsp_by_uids',
+                resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'],'ms_tunnel_get_lsp_by_uids',
                                            {'lsp_uids':[x['uid'] for x in lsps]})
                 # A map of {uid: {lsp obj}}
                 lsp_detail = resp['result']
@@ -191,7 +192,7 @@ class lsp_handler(base_handler):
 
             # Get customer uids with input lsp_uids
             args = {'lsp_uids':lsp_uids}
-            resp = yield self.do_query(microsrv_tunnel_url, self.subreq_tunnel_map[req['request']], args)
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], self.subreq_tunnel_map[req['request']], args)
             if resp['err_code'] != MS_OK:
                 raise tornado.gen.Return(final_resp)
 
@@ -207,7 +208,7 @@ class lsp_handler(base_handler):
             if len(cust_dict) == 0:
                 final_resp['err_code'] = 0
                 raise tornado.gen.Return(final_resp)
-            resp = yield self.do_query(microsrv_cust_url, 'ms_cust_get_customer', {'uids':cust_dict.keys()})
+            resp = yield self.do_query(microsrvurl_dict['microsrv_cust_url'], 'ms_cust_get_customer', {'uids':cust_dict.keys()})
             res = resp['result']['customers']
             for c in res:
                 cust_dict[c['uid']] = c
@@ -215,7 +216,7 @@ class lsp_handler(base_handler):
             # Get current bitrates of each ingress nodes
             #----------------------------------------------------------------------------------
             ingress_uids = [p['from_router_uid'] for p in lsps]
-            flow_resp = yield self.do_query(microsrv_flow_url, 'ms_flow_get_flow', {'ingress_uids':[ingress_uids]})
+            flow_resp = yield self.do_query(microsrvurl_dict['microsrv_flow_url'], 'ms_flow_get_flow', {'ingress_uids':[ingress_uids]})
             flow_resp = flow_resp['result']
             #resp is a map of ingress_uid:flows
             # Form the IP list to match customer.
@@ -224,7 +225,7 @@ class lsp_handler(base_handler):
                 for f in flow_resp[p]:
                     ips[f['src']] = None
             # call customer ms to convert ips to customers
-            cust_match = yield self.do_query(microsrv_cust_url, 'ms_cust_get_customer_by_ip', {"ips":ips.keys()})
+            cust_match = yield self.do_query(microsrvurl_dict['microsrv_cust_url'], 'ms_cust_get_customer_by_ip', {"ips":ips.keys()})
             ip_custs = cust_match['result']
             #Sum up the flow bps by customers
             cust_bps={}
@@ -271,7 +272,7 @@ class lsp_handler(base_handler):
         ' Get all lsps from tunnel micro service. No interface with controller '
         resp = {'err_code':-1, 'result':{}}
         try:
-            resp = yield self.do_query(microsrv_tunnel_url,self.subreq_tunnel_map[req['request']], req['args'] )
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'],self.subreq_tunnel_map[req['request']], req['args'] )
 
             # Change path into detail information for convenience of view
             equips = self.application.equips
@@ -315,7 +316,7 @@ class lsp_handler(base_handler):
         final_resp = {'err_code':-1, 'result':{}}
         try:
             # call tunnel service to add a temporary lsp with status 0
-            resp = yield self.do_query(microsrv_tunnel_url, self.subreq_tunnel_map[req['request']], req['args'])
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], self.subreq_tunnel_map[req['request']], req['args'])
             res = resp['result']
             if 'uid' not in res:
                 resp['err_code'] = -1
@@ -326,13 +327,13 @@ class lsp_handler(base_handler):
             rpc = base_rpc('')
             req['args']['uid'] = uid
             req['args']['callback'] = 'lsp_man_cb_lsp'
-            resp = yield self.do_query(microsrv_controller_url, self.subreq_ctrler_map[req['request']], req['args'])
+            resp = yield self.do_query(microsrvurl_dict['microsrv_controller_url'], self.subreq_ctrler_map[req['request']], req['args'])
             if resp['err_code'] != MS_OK:
                 ' Error occurs, Delete the LSP from tunnel ms '
                 args = {}
                 stat = 1
                 args['uid'] = uid
-                resp = yield self.do_query(microsrv_tunnel_url, self.subreq_tunnel_map['lsp_man_delete_lsp'], args)
+                resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], self.subreq_tunnel_map['lsp_man_delete_lsp'], args)
                 resp['err_code'] = -1
                 raise tornado.gen.Return(resp)
 
@@ -340,7 +341,7 @@ class lsp_handler(base_handler):
             if 'user_data' in resp:
                 rpc = base_rpc('')
                 args = {'uid':uid, 'user_data':resp['user_data']}
-                resp = yield self.do_query(microsrv_tunnel_url, self.subreq_ctrler_map['lsp_man_update_lsp'], args)
+                resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], self.subreq_ctrler_map['lsp_man_update_lsp'], args)
 
             final_resp = {'err_code':0}
             result = {'uid':uid, 'status':0}
@@ -359,21 +360,21 @@ class lsp_handler(base_handler):
             #Get user_data from tunnel ms
             rpc = base_rpc('')
             args = {'lsp_uids':[req['args']['uid']]}
-            resp = yield self.do_query(microsrv_tunnel_url, self.subreq_tunnel_map['lsp_man_get_lsp'], args)
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], self.subreq_tunnel_map['lsp_man_get_lsp'], args)
             res = resp['result']['lsps'][0]
             user_data = None
             if 'user_data' in res:
                 user_data = res['user_data']
 
             if 'lsp_man_del_lsp' == req['request']:
-                resp = yield self.do_query(te_flow_sched_url, 'flow_sched_del_lsp_flow', {'lsp_uid':req['args']['uid']})
+                resp = yield self.do_query(microsrvurl_dict['te_flow_sched_url'], 'flow_sched_del_lsp_flow', {'lsp_uid':req['args']['uid']})
 
             # call controller service to update tunnel
             rpc = base_rpc('')
             if user_data:
                 req['args']['user_data'] = user_data
             req['args']['callback'] = 'lsp_man_cb_lsp'
-            resp = yield self.do_query(microsrv_controller_url, self.subreq_ctrler_map[req['request']], req['args'])
+            resp = yield self.do_query(microsrvurl_dict['microsrv_controller_url'], self.subreq_ctrler_map[req['request']], req['args'])
             if 'user_data' in resp:
                 user_data = resp['user_data']
 
@@ -389,9 +390,9 @@ class lsp_handler(base_handler):
                     up_args['status'] = 2       #Deleting
                     final_resp['result'] = {'uid':req['args']['uid'], 'status':2}
 
-                resp = yield self.do_query(microsrv_tunnel_url,self.subreq_tunnel_map['lsp_man_update_lsp'], req['args'] )
+                resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'],self.subreq_tunnel_map['lsp_man_update_lsp'], req['args'] )
             elif resp['err_code'] == MS_DELETE_NON_EXISTING:
-                resp = yield self.do_query(microsrv_tunnel_url, self.subreq_tunnel_map['lsp_man_del_lsp'],
+                resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], self.subreq_tunnel_map['lsp_man_del_lsp'],
                     {'uid':req['args']['uid']})
             else:
                 raise tornado.gen.Return(final_resp)
@@ -432,7 +433,7 @@ class lsp_handler(base_handler):
             if 'path' in args:
                 up_args['path'] = args['path']
 
-            resp = yield self.do_query(microsrv_tunnel_url, self.subreq_tunnel_map['lsp_man_update_lsp'], up_args)
+            resp = yield self.do_query(microsrvurl_dict['microsrv_tunnel_url'], self.subreq_tunnel_map['lsp_man_update_lsp'], up_args)
             if resp['err_code'] != 0:
                 raise tornado.gen.Return(final_resp)
             final_resp['err_code'] = 0
@@ -480,7 +481,7 @@ class lsp_handler(base_handler):
 
 def remove_lsp(id):
 
-    rpc = base_rpc(microsrv_tunnel_url)
+    rpc = base_rpc(microsrvurl_dict['microsrv_tunnel_url'])
     rpc.form_request('ms_tunnel_del_lsp', dict(uid=id))
     rpc.do_sync_post()
     pass
@@ -491,7 +492,7 @@ def sync_lsp(*args, **kwargs):
     app = args[0]
 
     #Get equips data from topo ms
-    rpc = base_rpc(microsrv_topo_url)
+    rpc = base_rpc(microsrvurl_dict['microsrv_topo_url'])
     req = rpc.form_request('ms_topo_get_equip',{})
     r = rpc.do_sync_post()
     es = r['routers']        #an array of equip
@@ -503,7 +504,7 @@ def sync_lsp(*args, **kwargs):
 
     app.set_attrib('equips', em)
 
-    rpc = base_rpc(microsrv_controller_url)
+    rpc = base_rpc(microsrvurl_dict['microsrv_controller_url'])
     args = {}
     args['equips'] = es
     rpc.form_request('ms_controller_set_equips', args)
@@ -511,7 +512,7 @@ def sync_lsp(*args, **kwargs):
 
     return
     #Get current LSPs from tunnel ms
-    rpc = base_rpc(microsrv_tunnel_url)
+    rpc = base_rpc(microsrvurl_dict['microsrv_tunnel_url'])
     req = rpc.form_request('ms_tunnel_get_lsp', {})
     r = rpc.do_sync_post()
     t_lsps = r['lsps'] if 'lsps' in r else {}
@@ -520,7 +521,7 @@ def sync_lsp(*args, **kwargs):
         t_map[str(lp['user_data'])] = lp
 
     #Get LSPs from controller ms
-    rpc = base_rpc(microsrv_controller_url)
+    rpc = base_rpc(microsrvurl_dict['microsrv_controller_url'])
     req = rpc.form_request('ms_controller_get_lsp', {})
     r = rpc.do_sync_post()
     c_lsps = r['lsps'] if 'lsps' in r else {}
@@ -538,14 +539,14 @@ def sync_lsp(*args, **kwargs):
             'Update the status if not the same'
             c_lsp = c_map[str(tl['user_data'])]
             if tl['status'] != c_lsp['status']:
-                rpc = base_rpc(microsrv_tunnel_url)
+                rpc = base_rpc(microsrvurl_dict['microsrv_tunnel_url'])
                 tl['status'] = c_lsp['status']
                 rpc.form_request('ms_tunnel_update_lsp', tl)
                 r = rpc.do_sync_post()
 
     for clsp in c_lsps:
         if str(clsp['user_data']) not in t_map:
-            rpc = base_rpc(microsrv_tunnel_url)
+            rpc = base_rpc(microsrvurl_dict['microsrv_tunnel_url'])
             rpc.form_request('ms_tunnel_add_lsp', clsp)
             r = rpc.do_sync_post()
         pass
@@ -889,7 +890,41 @@ class vsite_flow_policy_handler(flow_sched_handler):
         self.finish()
         pass
 
+def openo_related_service_query():
+    #{"protocol": "REST", "url": "/openoapi/sdnovsitemgr/v1", "visualRange": 1, "version": "v1", "serviceName": "vsite_mgr", "nodes": [{"ip": "127.0.0.1", "port": 8600, "ttl": 0}]}
+    # print('customer_url---:' + microsrv_cust_url)
+    customer_server_resp = openo_query_service('vsite_mgr', 'v1')
+    # microsrv_cust_url = 'http://127.0.0.1:33771/'
+    if customer_server_resp is not None and 'nodes' in customer_server_resp:
+        for item in customer_server_resp['nodes']:
+            if 'ip' in item:
+                microsrvurl_dict['microsrv_cust_url'] = 'http://' + item['ip'] + ':33771'
+                break
+    # print('customer_url+++:' + microsrv_cust_url)
 
+    #{"protocol": "REST", "url": "/openoapi/sdnomonitoring/v1", "visualRange": 1, "version": "v1", "serviceName": "link_flow_monitor", "nodes": [{"ip": "127.0.0.1", "port": 8610, "ttl": 0}]}
+    # print('te_topo_man_url---:' + te_topo_man_url)
+    topo_serv_resp = openo_query_service('link_flow_monitor', 'v1')
+    #te_topo_man_url = 'http://127.0.0.1:32769'
+    if topo_serv_resp is not None and 'nodes' in topo_serv_resp:
+        for item in topo_serv_resp['nodes']:
+            if 'ip' in item:
+                microsrvurl_dict['te_topo_man_url'] = 'http://' + item['ip'] + ':32769'
+                break
+    # print('te_topo_man_url+++:' + te_topo_man_url)
+
+    #{"driverInfo": {"protocol": "REST", "instanceID": "sdno-driver-ct-te_ID", "ip": "127.0.0.1", "driverName": "sdno-driver-ct-te", "services": [{"support_sys": [{"version": "v1", "type": "ct_te_driver"}], "service_url": "/openoapi/sdno-driver-ct-te/v1/"}], "port": 8670}}
+    # print('microsrv_controller_url---:' + microsrv_controller_url)
+    ms_controller_resp = openo_query_driver('sdno-driver-ct-te', 'sdno-driver-ct-te_ID', 'v1')
+    # microsrv_controller_url = 'http://10.9.63.140:12727/'
+    if ms_controller_resp is not None:
+        for item in ms_controller_resp:
+            if 'driverName' in item and 'sdno-driver-ct-te' == item['driverName']:
+                if 'ip' in item:
+                    microsrvurl_dict['microsrv_controller_url'] = 'http://' + item['ip'] + ':12727'
+                    break
+    # print('microsrv_controller_url+++:' + microsrv_controller_url)
+    pass
 
 class swagger_app(swagger.Application):
     def __init__(self):
@@ -917,28 +952,32 @@ class swagger_app(swagger.Application):
         tornado.ioloop.IOLoop.instance().add_timeout(
                         datetime.timedelta(milliseconds=500),
                         openo_register, 'mpls-optimizer', 'v1', '/openoapi/sdnooptimize/v1',
-                        '127.0.0.1', te_lsp_rest_port )
+                        microsrvurl_dict['te_lsp_rest_host'], microsrvurl_dict['te_lsp_rest_port'] )
 
-def strip_uniq_from_argv():
-    '''The --uniq is used to identify a process.
+        tornado.ioloop.IOLoop.instance().add_timeout(
+                        datetime.timedelta(milliseconds=1000), openo_related_service_query)
 
-    a.py --uniq=2837492392994857 argm argn ... argz
-    ps aux | grep "--uniq=2837492392994857" | awk '{print $2}' | xargs kill -9
-    '''
+def strip_parse_from_argv():
+    options.define("uniq", default="2837492392992775", help="service unique id")
+    options.define("localurl", default=microsrvurl_dict['te_lsp_rest_host'] + te_host_port_divider + str(microsrvurl_dict['te_lsp_rest_port']), help="service host:port")
+    options.define("msburl", default=microsrvurl_dict['te_msb_rest_host'] + te_host_port_divider + str(microsrvurl_dict['te_msb_rest_port']), help="micro service bus host:port")
+    tornado.options.parse_command_line()
+    microsrvurl_dict['te_lsp_rest_host'] = options.localurl.split(':')[0]
+    microsrvurl_dict['te_lsp_rest_port'] = int(options.localurl.split(':')[1])
+    microsrvurl_dict['openo_ms_url'] = te_protocol + options.msburl + openo_ms_url_prefix
+    microsrvurl_dict['openo_dm_url'] = te_protocol + options.msburl + openo_dm_url_prefix
+    microsrvurl_dict['openo_esr_url'] = te_protocol + options.msburl + openo_esr_url_prefix
+    microsrvurl_dict['openo_brs_url'] = te_protocol + options.msburl + openo_brs_url_prefix
 
-    for a in sys.argv:
-        if a.startswith("--uniq="):
-            sys.argv.remove(a)
+    pass
 
 if __name__ == '__main__':
-    strip_uniq_from_argv()
-
-    tornado.options.parse_command_line()
+    strip_parse_from_argv()
     swag = swagger_app()    # For REST interface
     app = lsp_app(swag)
     server = tornado.httpserver.HTTPServer(app)
     server.listen(32775)
     server_swag = tornado.httpserver.HTTPServer(swag)
-    server_swag.listen(te_lsp_rest_port)
+    server_swag.listen(microsrvurl_dict['te_lsp_rest_port'])
 
     tornado.ioloop.IOLoop.instance().start()
