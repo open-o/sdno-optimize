@@ -22,7 +22,7 @@
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../oparent</relativePath>
     </parent>
-    <groupId>org.openo.sdno.optimizer</groupId>
+    <groupId>org.openo.sdno.optimize</groupId>
     <artifactId>ct_optimizer</artifactId>
     <packaging>pom</packaging>
     <name>ct_optimizer</name>
