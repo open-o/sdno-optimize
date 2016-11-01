@@ -23,7 +23,7 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.openo.sdno.optimizer</groupId>
+    <groupId>org.openo.sdno.optimize</groupId>
     <artifactId>ct_optimizer</artifactId>
     <packaging>pom</packaging>
     <name>ct_optimizer</name>
