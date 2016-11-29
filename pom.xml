@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
     Copyright 2016 China Telecommunication Co., Ltd.
 
@@ -26,7 +27,7 @@
     <groupId>org.openo.sdno.optimize</groupId>
     <artifactId>ct_optimizer</artifactId>
     <packaging>pom</packaging>
-    <name>ct_optimizer</name>
+    <name>sdno-optimize</name>
     <description>MPLS optimizer</description>
     <build>
       <defaultGoal>package</defaultGoal>
