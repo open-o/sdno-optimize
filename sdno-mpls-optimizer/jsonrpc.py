@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-#  Copyright 2016 China Telecommunication Co., Ltd.
+#  Copyright 2016-2017 China Telecommunication Co., Ltd.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ class base_rpc(object):
                 request.add_header('Accept-encoding', 'gzip')
 
             opener = urllib2.build_opener(RedirectHandler)
-            response = opener.open(request, json_obj)
+            response = opener.open(request, json_obj, timeout=20)
             data = response.read()
             hdr = response.headers.get('Content-Encoding')
             if hdr:
