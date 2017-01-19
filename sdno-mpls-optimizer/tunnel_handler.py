@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-#  Copyright 2016 China Telecommunication Co., Ltd.
+#  Copyright 2016-2017 China Telecommunication Co., Ltd.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         resp['msg'] = ''
         self.set_header('Content-Type', 'application/json')
         return resp
-    
+
     def post(self):
         ctnt = self.request.body
         if self.log == 1:
@@ -76,7 +76,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
             print json.dumps(resp)
         self.write(json.dumps(resp))
         pass
-    
+
     def get_lsp_by_flow(self,args):
         flow_uids = args['flow_uids']
         flow_lsps = {}
@@ -111,7 +111,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
             flow_lsps[fid] = lsps
         db.close()
         return flow_lsps
-    
+
     def get_lsp(self, args):
         if 'lsp_uids' in args:
             uids = args['lsp_uids']
@@ -149,8 +149,8 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
 
         lsps['lsps'] = lsp
         return lsps
-    
-    
+
+
     def add_lsp(self, args):
         lsp = args
         added_lsp = []
@@ -179,7 +179,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         lsp_id = db.exec_sql('SELECT LAST_INSERT_ID()')[0][0]
         db.close()
         return {'uid':str(lsp_id)}
-    
+
     def del_lsp(self, args):
         if 'uids' in args:
             uids = args['uids']
@@ -193,7 +193,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
             db.commit()
         db.close()
         return result
-    
+
     def update_lsp(self, args):
         lsp = args
 
@@ -220,20 +220,21 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
             db.commit()
         db.close()
         print result
-        
+
         pass
-    
+
     def add_flow(self, args):
         flow_uid = args['flow_uid']
         lsp_uid = args['lsp_uid']
         status = args['status'] if 'status' in args else 0
-        user_data = args['user_data'] if 'user_data' in args else ''
-        
+        user_data = args['user_data'] if 'user_data' in args else {}
+
         #insert into t_assigned_flow values (1, 1, 16843265, 16843266, '1.1.2.1', '1.1.2.2');
         # ip = customer['ips'].split('/')[0]
         # print ip
         # mask = int(customer['ips'].split('/')[1])
         # print mask
+        user_data = json.dumps(user_data)
 
         sql_str = 'insert into t_assigned_flow(lsp_id,flow_id,status, user_data) values (%s,%s,%s,\'%s\')' \
             % (lsp_uid,flow_uid, status, user_data)
@@ -333,7 +334,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         db = mysql_utils('tunnel')
         results = db.exec_sql(sql_str)
         db.close()
-        
+
         for result in results:
             one_lsp = {}
             one_lsp['uid'] = uid
@@ -343,12 +344,12 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
             one_lsp['bandwidth'] = result[8]
             one_lsp['delay'] = result[9]
             one_lsp['priority'] = result[10]
-            
+
             lsp.append(one_lsp)
 
         lsps['lsps'] = lsp
         return lsps
-    
+
     def get_lsp_by_customer(self, args):
         customers = args['cust_uids']
         lsps = {}
@@ -402,7 +403,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
             customers[lsp_uid].append(cust_uid)
 
         return customers
-    
+
     def add_customer_to_lsp(self, args):
         cust_uid = args['cust_uid']
         lsp_uid = args['lsp_uid']

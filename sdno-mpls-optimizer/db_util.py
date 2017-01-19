@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-#  Copyright 2016 China Telecommunication Co., Ltd.
+#  Copyright 2016-2017 China Telecommunication Co., Ltd.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from DBUtils.PooledDB import PooledDB
 
 class mysql_utils(object):
     __pool = {}
-    dbhost = '10.9.63.208'
+    dbhost = 'localhost'
     dbusr = 'root'
     dbpwd = 'root'
     dbport = 3306

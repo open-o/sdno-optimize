@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-#  Copyright 2016 China Telecommunication Co., Ltd.
+#  Copyright 2016-2017 China Telecommunication Co., Ltd.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ class Test_Optimizer(AsyncTestCase):
 
     def tearDown(self):
         super(Test_Optimizer,self).tearDown()
-        
+
     @tornado.testing.gen_test
     def test_i_delete_lsp(self):
         print('test_delete_lsp:')

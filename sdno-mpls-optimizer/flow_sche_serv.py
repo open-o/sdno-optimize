@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-#  Copyright 2016 China Telecommunication Co., Ltd.
+#  Copyright 2016-2017 China Telecommunication Co., Ltd.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -117,10 +117,10 @@ class flow_sched_handler(base_handler):
         ' get customer ips from customer_flow microservice, call controller and then tunnel'
         final_resp = {'err_code':-1, 'result': {}}
         # flow_add_tag = True
-        db = mysql_utils('topology')
-        db.exec_sql('Update flag set flow_add_flag = 1 where id = 1')
-        db.commit()
-        db.close()
+        # db = mysql_utils('topology')
+        # db.exec_sql('Update flag set flow_add_flag = 1 where id = 1')
+        # db.commit()
+        # db.close()
         try:
             req_lsp = req['args']['lsp_uid']
             flows, flow_map, user_data = yield self.get_base_info(req, 1)
@@ -273,17 +273,25 @@ class flow_sched_handler(base_handler):
         '''
         final_resp = {'err_code':-1, 'result':{}}
         try:
-            equip = req['args']['equip_uid']
+            req = req['args']
+            equip, vlink = None, None
+            sub_arg = {}
+            if 'equip_uid' in req:
+                equip = str(req['equip_uid'])
+                sub_arg = {'equip_uid':equip}
+            elif 'vlink_uid' in req:
+                vlink = str(req['vlink_uid'])
+                sub_arg = {'vlink_uid':vlink}
 
             #Call ms_flow to get flow
-            resp = yield self.do_query(microsrvurl_dict['microsrv_flow_url'], 'ms_flow_get_flow', {'equip_uid':equip})
+            resp = yield self.do_query(microsrvurl_dict['microsrv_flow_url'], 'ms_flow_get_flow', sub_arg)
             flows = resp['result']['flows']
 
-            # Form src ip list and get customer of all flow.
-            src_ips = {}
+            # Form dest ip list and get customer of all flow.
+            ips = {}
             for f in flows:
-                src_ips[f['src']] = 0
-            ip_list = [x for x in src_ips]
+                ips[f['dst']] = 0
+            ip_list = [x for x in ips]
 
             resp = yield self.do_query(microsrvurl_dict['microsrv_cust_url'], 'ms_cust_get_customer_by_ip', {'ips':ip_list})
             custs = resp['result']
@@ -291,7 +299,7 @@ class flow_sched_handler(base_handler):
             #Aggregate data.  cust_flows is {cust_uid: {cust_name, hops:{next_hop_uid:{next_hop_name, bps} } }}
             cust_flows = {}
             for f in flows:
-                c = custs[f['src']] if f['src'] in custs else {'name':'Unknown', 'cust_uid':'-1'}
+                c = custs[f['dst']] if f['dst'] in custs else {'name':'Unknown', 'cust_uid':'-1'}
                 cid = c['cust_uid']
                 try:
                     next = str(f['next_hop_uid'])
@@ -301,12 +309,9 @@ class flow_sched_handler(base_handler):
                             link = fs[next]
                             link['bps'] += f['bps']
                         else:
-                            fs[next] =  {'next_hop_name':self.application.equips[next]['name'],
-                                         'next_hop_uid':self.application.equips[next]['uid'],
-                                                     'bps': f['bps']}
+                            fs[next] =  {'next_hop_name':self.application.equips[next]['name'], 'bps': f['bps']}
                     else:
-                        hops = {next:{'next_hop_name':self.application.equips[next]['name'],
-                                      'next_hop_uid':self.application.equips[next]['uid'], 'bps': f['bps']}}
+                        hops = {next:{'next_hop_name':self.application.equips[next]['name'], 'bps': f['bps']}}
                         cust_flows[cid] = {'cust_name':c['name'], 'hops':hops}
                 except (KeyError,LookupError):
                     traceback.print_exc()
@@ -321,11 +326,15 @@ class flow_sched_handler(base_handler):
                 for h in hops:
                     fc = copy.copy(f)
                     fc['next_hop_name'] = hops[h]['next_hop_name']
-                    fc['next_hop_uid'] = hops[h]['next_hop_uid']
+                    fc['next_hop_uid'] = h
                     fc['bps'] =  hops[h]['bps']
                     flow_list.append(fc)
                     pass
                 pass
+
+            total = sum([float(x['bps'] )for x in flow_list])
+            for f in flow_list:
+                f['percentage'] = float(f['bps'])*100.0 / total if total > 0 else 0
 
             # Sort the list.
             flow_list.sort(reverse=True, key=lambda x:x['bps'])
@@ -534,5 +543,5 @@ class flow_sched_app(tornado.web.Application):
 if __name__ == '__main__':
     app = flow_sched_app()
     server = tornado.httpserver.HTTPServer(app)
-    server.listen(32774)
+    server.listen(32773)
     tornado.ioloop.IOLoop.instance().start()

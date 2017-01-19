@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-#  Copyright 2016 China Telecommunication Co., Ltd.
+#  Copyright 2016-2017 China Telecommunication Co., Ltd.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -245,7 +245,7 @@ class ms_topo_handler(tornado.web.RequestHandler):
     def get_vlinks(self, arg):
         vl = {}
         # FIXME:
-        return {'vlinks':[]}
+        # return {'vlinks':[]}
         vls = []
 
         #ports are 1000_0~1000_3, 1001_0~1001_3, 1002_0~1002_3
