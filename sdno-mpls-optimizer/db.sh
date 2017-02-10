@@ -15,4 +15,4 @@
 #  limitations under the License.
 #
 
-mysql -uroot -proot -e "drop database if exists tunnel; create database tunnel;source ./db.sql;"
+mysql -uroot -proot -e "drop database if exists tunnel; create database tunnel;use tunnel; source ./db.sql;"
