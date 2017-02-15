@@ -419,10 +419,10 @@ class lsp_handler(base_handler):
             else:
                 raise tornado.gen.Return(final_resp)
             # flow_add_tag = False
-            db = mysql_utils('topology')
-            db.exec_sql('Update flag set flow_add_flag = 0 where id = 1')
-            db.commit()
-            db.close()
+            # db = mysql_utils('topology')
+            # db.exec_sql('Update flag set flow_add_flag = 0 where id = 1')
+            # db.commit()
+            # db.close()
             final_resp['err_code'] = 0
         except (LookupError, TypeError):
             traceback.print_exc()

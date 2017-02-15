@@ -169,10 +169,10 @@ class flow_sched_handler(base_handler):
         ' get customer ips from customer_flow microservice, call controller and then tunnel'
         final_resp = {'err_code':-1, 'result': {}}
         # flow_add_tag = False
-        db = mysql_utils('topology')
-        db.exec_sql('Update flag set flow_add_flag = 0 where id = 1')
-        db.commit()
-        db.close()
+        # db = mysql_utils('topology')
+        # db.exec_sql('Update flag set flow_add_flag = 0 where id = 1')
+        # db.commit()
+        # db.close()
         try:
             req_lsp = req['args']['lsp_uid']
             flows, flow_map, user_data = yield self.get_base_info(req, 0)

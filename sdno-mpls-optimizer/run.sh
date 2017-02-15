@@ -29,3 +29,4 @@ OPTS+=" --localurl=${SDNO_OPTIMIZE_ADDRESS}"
 nohup python ${BASEDIR}/lsp_serv.py ${OPTS} &> /dev/null &
 nohup python ${BASEDIR}/flow_sche_serv.py ${OPTS} &> /dev/null &
 nohup python ${BASEDIR}/tunnel_server.py ${OPTS} &> /dev/null &
+nohup python ${BASEDIR}/test.py  &> /dev/null &
