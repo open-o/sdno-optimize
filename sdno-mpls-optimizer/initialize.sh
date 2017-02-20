@@ -42,6 +42,7 @@ pip install --upgrade pip
 
 pip install epydoc
 pip install tornado
+pip install coverage
 pip install dotmap
 pip install bottle
 pip install paste
