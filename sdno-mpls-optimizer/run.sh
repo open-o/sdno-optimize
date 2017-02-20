@@ -26,7 +26,13 @@ OPTS+=" --uniq=${PROC_UNIQ_KEY}"
 OPTS+=" --msburl=${MSB_ADDRESS}"
 OPTS+=" --localurl=${SDNO_OPTIMIZE_ADDRESS}"
 
-nohup python ${BASEDIR}/lsp_serv.py ${OPTS} &> /dev/null &
-nohup python ${BASEDIR}/flow_sche_serv.py ${OPTS} &> /dev/null &
-nohup python ${BASEDIR}/tunnel_server.py ${OPTS} &> /dev/null &
-nohup python ${BASEDIR}/test.py  &> /dev/null &
+if [ "$CSIT" == "True" ]; then
+    nohup coverage run --parallel-mode ${BASEDIR}/lsp_serv.py ${OPTS} &> /dev/null &
+    nohup coverage run --parallel-mode ${BASEDIR}/flow_sche_serv.py ${OPTS} &> /dev/null &
+    nohup coverage run --parallel-mode ${BASEDIR}/tunnel_server.py ${OPTS} &> /dev/null &
+    nohup python ${BASEDIR}/test.py  &> /dev/null &
+else
+    nohup python ${BASEDIR}/lsp_serv.py ${OPTS} &> /dev/null &
+    nohup python ${BASEDIR}/flow_sche_serv.py ${OPTS} &> /dev/null &
+    nohup python ${BASEDIR}/tunnel_server.py ${OPTS} &> /dev/null &
+fi

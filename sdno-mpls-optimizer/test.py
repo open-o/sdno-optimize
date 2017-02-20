@@ -24,7 +24,6 @@ import tornado.httpclient
 import tornado.gen
 import json
 import re
-from db_util import mysql_utils
 
 class ms_topo_handler(tornado.web.RequestHandler):
     def initialize(self):
@@ -286,10 +285,6 @@ class ms_topo_handler(tornado.web.RequestHandler):
     def get_link_status(self, arg):
         ls = {}
         ps = []
-        #db = mysql_utils('topology')
-        #res = db.exec_sql('select flow_add_flag from flag  where id = 1')
-        #flow_add_tag = res[0][0]
-        #db.close()
 
         #link status for 4 ports 1000_0 1001_0 1000_2 1002_2, and 4 ports of vlinks: 1000_1 1000_3 1002_1 1002_3
         s = {}
