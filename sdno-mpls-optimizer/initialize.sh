@@ -17,6 +17,21 @@
 
 BASEDIR=$(dirname $(readlink -f $0))
 
+while [ "$DEBUG" == "1" ]; do
+    echo "========================"
+    echo "= DEBUG LOOP           ="
+    echo "========================"
+    if [ -e "/tmp/debug.bye" ]; then
+        echo "Exit debug loop"
+        break
+    fi
+    sleep 60
+    if [ -e "/tmp/debug.sh" ]; then
+        chmod +x /tmp/debug.sh
+        sh /tmp/debug.sh
+    fi
+done
+
 #
 # Mysql
 #
