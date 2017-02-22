@@ -128,7 +128,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         db.close()
         lsps = {}
         lsp = []
-
+        if results is not None:
         for result in results:
             one_lsp = {}
             one_lsp['uid'] = str(result[0])
@@ -227,14 +227,13 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         flow_uid = args['flow_uid']
         lsp_uid = args['lsp_uid']
         status = args['status'] if 'status' in args else 0
-        user_data = args['user_data'] if 'user_data' in args else {}
+        user_data = args['user_data'] if 'user_data' in args else ''
 
         #insert into t_assigned_flow values (1, 1, 16843265, 16843266, '1.1.2.1', '1.1.2.2');
         # ip = customer['ips'].split('/')[0]
         # print ip
         # mask = int(customer['ips'].split('/')[1])
         # print mask
-        user_data = json.dumps(user_data)
 
         sql_str = 'insert into t_assigned_flow(lsp_id,flow_id,status, user_data) values (%s,%s,%s,\'%s\')' \
             % (lsp_uid,flow_uid, status, user_data)
@@ -282,6 +281,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         db.close()
 
         flows = {}
+	if result is not None:
         for f in result:
             flow = {}
             flow['flow_uid'] = f[10]
@@ -394,7 +394,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         results = db.exec_sql(sql_str)
         db.close()
         customers = {}
-
+	if results is not None:
         for result in results:
             lsp_uid = str(result[1])
             cust_uid = str(result[6])
@@ -439,7 +439,7 @@ class ms_tunnel_handler(tornado.web.RequestHandler):
         results = db.exec_sql(sql_str)
         db.close()
 
-
+        if results is not None:
         for result in results:
             uid = result[0]
             one_lsp = {}

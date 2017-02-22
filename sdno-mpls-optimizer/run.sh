@@ -27,12 +27,12 @@ OPTS+=" --msburl=${MSB_ADDRESS}"
 OPTS+=" --localurl=${SDNO_OPTIMIZE_ADDRESS}"
 
 if [ "$CSIT" == "True" ]; then
-    nohup coverage run --parallel-mode ${BASEDIR}/lsp_serv.py ${OPTS} &> /dev/null &
-    nohup coverage run --parallel-mode ${BASEDIR}/flow_sche_serv.py ${OPTS} &> /dev/null &
-    nohup coverage run --parallel-mode ${BASEDIR}/tunnel_server.py ${OPTS} &> /dev/null &
-    nohup python ${BASEDIR}/test.py  &> /dev/null &
+    nohup coverage run --parallel-mode ${BASEDIR}/lsp_serv.py ${OPTS}  &
+    nohup coverage run --parallel-mode ${BASEDIR}/flow_sche_serv.py ${OPTS}  &
+    nohup coverage run --parallel-mode ${BASEDIR}/tunnel_server.py ${OPTS}  &
+    nohup python ${BASEDIR}/test.py   &
 else
-    nohup python ${BASEDIR}/lsp_serv.py ${OPTS} &> /dev/null &
-    nohup python ${BASEDIR}/flow_sche_serv.py ${OPTS} &> /dev/null &
-    nohup python ${BASEDIR}/tunnel_server.py ${OPTS} &> /dev/null &
+    nohup python ${BASEDIR}/lsp_serv.py ${OPTS}  &
+    nohup python ${BASEDIR}/flow_sche_serv.py ${OPTS}  &
+    nohup python ${BASEDIR}/tunnel_server.py ${OPTS}  &
 fi
